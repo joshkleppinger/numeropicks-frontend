@@ -1,4 +1,4 @@
-const BASE = process.env.REACT_APP_API_URL || 'https://numeropicks-backend.onrender.com';
+const BASE = process.env.REACT_APP_API_URL || 'https://numeropicks-backend-1.onrender.com';
 
 async function api(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, options);
