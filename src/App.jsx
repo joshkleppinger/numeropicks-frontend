@@ -6,7 +6,7 @@ import {
   getGames, getAccuracy, getScrapeStatus,
   predict, scrapeAll, downloadUrl,
 } from './api';
-import logo from './assets/red_ball_logo.png';
+const logo = process.env.PUBLIC_URL + '/red_ball_logo.png';
 
 const C = {
   bg:'#0a0e1a', panel:'#111827', border:'#1e293b',
