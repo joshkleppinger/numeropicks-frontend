@@ -4,7 +4,7 @@ import { AccuracyPanel } from './components/AccuracyPanel';
 import { DataTable } from './components/DataTable';
 import {
   getGames, getAccuracy, getScrapeStatus,
-  predict, scrapeAll, downloadUrl,
+  predictAsync, predictResult, scrapeAll, downloadUrl,
 } from './api';
 const logo = process.env.PUBLIC_URL + '/red_ball_logo.png';
 
@@ -147,11 +147,14 @@ export default function App() {
   const nextDraw = games[activeGame]?.next_draw||'';
   const friendly = (()=>{
     try {
-      const d=new Date(nextDraw+'T12:00:00');
-      const day=d.toLocaleDateString('en-US',{weekday:'long'});
-      const mon=d.toLocaleDateString('en-US',{month:'long'});
-      const n=d.getDate();
-      const sfx=[,'st','nd','rd'][((n%100-20)%10||n%100-10)?n%10:0]||'th';
+      if (!nextDraw) return '';
+      // nextDraw comes back as e.g. "Mon, Apr 28, 2026" — parse directly
+      const d = new Date(nextDraw);
+      if (isNaN(d.getTime())) return `Next drawing: ${nextDraw}`;
+      const day = d.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});
+      const mon = d.toLocaleDateString('en-US',{month:'long',timeZone:'UTC'});
+      const n   = d.getUTCDate();
+      const sfx = [,'st','nd','rd'][((n%100-20)%10||n%100-10)?n%10:0]||'th';
       return `These numbers are for the ${day}, ${mon} ${n}${sfx} drawing`;
     } catch { return nextDraw?`Next drawing: ${nextDraw}`:''; }
   })();
@@ -159,11 +162,23 @@ export default function App() {
   const runAnalysis = useCallback(async()=>{
     setLoading(l=>({...l,[activeGame]:true}));
     try {
-      const res=await predict(activeGame);
-      setTickets(t=>({...t,[activeGame]:res}));
-      const acc=await getAccuracy(activeGame);
+      // Start the job in the background
+      const job = await predictAsync(activeGame);
+      // Poll every 3 seconds until done
+      let result = null;
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const poll = await predictResult(job.job_id);
+        if (poll.status === 'done') { result = poll; break; }
+        if (poll.status === 'error') throw new Error(poll.detail);
+      }
+      if (!result) throw new Error('Analysis timed out — please try again.');
+      setTickets(t=>({...t,[activeGame]:result}));
+      const acc = await getAccuracy(activeGame);
       setAccuracy(a=>({...a,[activeGame]:acc}));
-    } catch(e){ alert('Analysis failed: '+e.message); }
+    } catch(e){
+      alert('Analysis failed: ' + e.message);
+    }
     finally { setLoading(l=>({...l,[activeGame]:false})); }
   },[activeGame]);
 
