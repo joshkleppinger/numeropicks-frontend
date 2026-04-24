@@ -12,6 +12,8 @@ export const getAccuracy   = (key)       => api(`/accuracy/${key}`);
 export const getNextDraw   = (key)       => api(`/next-draw/${key}`);
 export const getScrapeStatus = ()        => api('/scrape-status');
 export const predict       = (key)       => api(`/predict/${key}`);
+export const predictAsync  = (key)       => api(`/predict-async/${key}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body:'{}' });
+export const predictResult = (jobId)     => api(`/predict-result/${jobId}`);
 export const scrapeAll     = ()          => api('/scrape-all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
 export const scrapeGame    = (key)       => api(`/scrape/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
 export const downloadUrl   = (key, fmt)  => `${BASE}/download/${key}/${fmt}`;
