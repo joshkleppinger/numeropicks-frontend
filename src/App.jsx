@@ -4,7 +4,7 @@ import { AccuracyPanel } from './components/AccuracyPanel';
 import { DataTable } from './components/DataTable';
 import {
   getGames, getAccuracy, getScrapeStatus,
-  predictAsync, predictResult, scrapeAll, downloadUrl,
+  predict, scrapeAll, downloadUrl,
 } from './api';
 const logo = process.env.PUBLIC_URL + '/red_ball_logo.png';
 
@@ -162,18 +162,9 @@ export default function App() {
   const runAnalysis = useCallback(async()=>{
     setLoading(l=>({...l,[activeGame]:true}));
     try {
-      // Start the job in the background
-      const job = await predictAsync(activeGame);
-      // Poll every 3 seconds until done
-      let result = null;
-      for (let i = 0; i < 40; i++) {
-        await new Promise(r => setTimeout(r, 3000));
-        const poll = await predictResult(job.job_id);
-        if (poll.status === 'done') { result = poll; break; }
-        if (poll.status === 'error') throw new Error(poll.detail);
-      }
-      if (!result) throw new Error('Analysis timed out — please try again.');
-      setTickets(t=>({...t,[activeGame]:result}));
+      // Direct call with 3-minute timeout — handles slow Render free tier wakeup
+      const res = await predict(activeGame);
+      setTickets(t=>({...t,[activeGame]:res}));
       const acc = await getAccuracy(activeGame);
       setAccuracy(a=>({...a,[activeGame]:acc}));
     } catch(e){
