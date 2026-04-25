@@ -9,7 +9,7 @@ async function api(path, options = {}) {
 // Long-timeout fetch for the predict call — 3 minutes
 async function apiLong(path, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 180000); // 3 min
+  const timer = setTimeout(() => controller.abort(), 300000); // 5 min
   try {
     const res = await fetch(`${BASE}${path}`, {
       ...options,
