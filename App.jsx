@@ -122,6 +122,91 @@ function DownloadsPage({ games, onBack }) {
 }
 
 /* ── Main App ────────────────────────────────────────────────────────────── */
+
+/* ── Animated analysing spinner with rotating highlight + countdown ────────── */
+function AnalyzingSpinner() {
+  const TOTAL = 120; // seconds estimate
+  const [elapsed, setElapsed] = React.useState(0);
+  const [angle, setAngle]     = React.useState(0);
+
+  // Update angle 8x per second for double speed, elapsed once per second
+  React.useEffect(() => {
+    const fast = setInterval(() => setAngle(a => (a + 1) % 360), 125); // 8deg/s × 1deg = ~8 steps/s
+    const slow = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => { clearInterval(fast); clearInterval(slow); };
+  }, []);
+
+  const remaining = Math.max(0, TOTAL - elapsed);
+  const mins      = Math.floor(remaining / 60);
+  const secs      = remaining % 60;
+  const timeStr   = mins > 0
+    ? `${mins}m ${String(secs).padStart(2,'0')}s remaining`
+    : `${secs}s remaining`;
+  const pct = Math.min(elapsed / TOTAL, 1);
+
+  // Arc inside the ball at 70% radius, 72° extent (20% shorter than 90°)
+  const toRad    = d => (d * Math.PI) / 180;
+  const SIZE     = 56;
+  const cx       = SIZE / 2;
+  const cy       = SIZE / 2;
+  const R_inner  = (SIZE / 2 - 2) * 0.70;  // 70% of ball radius = inside
+  const EXTENT   = 72;                       // degrees (was 90, now 20% shorter)
+  const startDeg = angle;
+  const endDeg   = angle + EXTENT;
+  const x1 = cx + R_inner * Math.cos(toRad(startDeg));
+  const y1 = cy + R_inner * Math.sin(toRad(startDeg));
+  const x2 = cx + R_inner * Math.cos(toRad(endDeg));
+  const y2 = cy + R_inner * Math.sin(toRad(endDeg));
+  const arcPath = `M ${x1} ${y1} A ${R_inner} ${R_inner} 0 0 1 ${x2} ${y2}`;
+
+  const statusMsg = elapsed < 8 ? 'Waking up server…'
+                  : elapsed < 20 ? 'Loading draw history…'
+                  : 'Crunching the numbers…';
+
+  return (
+    <div style={{textAlign:'center', padding:'40px 0', color:'#94a3b8'}}>
+      <div style={{display:'flex', justifyContent:'center', marginBottom:'16px'}}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <circle cx={cx+1} cy={cy+2} r={SIZE/2-2} fill="rgba(0,0,0,0.2)"/>
+          <circle cx={cx}   cy={cy}   r={SIZE/2-2} fill="#ef4444"/>
+          <circle cx={cx}   cy={cy}   r={SIZE/2-2} fill="url(#spinGrad)"/>
+          <defs>
+            <radialGradient id="spinGrad" cx="38%" cy="32%" r="58%">
+              <stop offset="0%"   stopColor="#ff8080" stopOpacity="0.7"/>
+              <stop offset="100%" stopColor="#7f0000" stopOpacity="0.4"/>
+            </radialGradient>
+          </defs>
+          {/* Rotating arc — inner radius, 72° extent, double speed */}
+          <path d={arcPath} fill="none"
+                stroke="rgba(255,220,220,0.80)"
+                strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </div>
+
+      <div style={{fontSize:'15px', fontWeight:'600', color:'#e2e8f0', marginBottom:'6px'}}>
+        Running 7-method analysis…
+      </div>
+
+      {/* Progress bar — estimate only, not real-time */}
+      <div style={{width:'200px', height:'3px', background:'#1e293b',
+                   borderRadius:'2px', margin:'0 auto 10px', overflow:'hidden'}}>
+        <div style={{width:`${pct*100}%`, height:'100%',
+                     background:'#ef4444', borderRadius:'2px',
+                     transition:'width 1s linear'}}/>
+      </div>
+
+      <div style={{fontSize:'13px', color:'#64748b'}}>
+        {statusMsg}
+        {remaining > 0 &&
+          <span style={{marginLeft:'8px', color:'#475569'}}>
+            · est. {timeStr}
+          </span>
+        }
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeGame,setActiveGame]     = useState('powerball');
   const [games,setGames]               = useState({});
@@ -147,11 +232,14 @@ export default function App() {
   const nextDraw = games[activeGame]?.next_draw||'';
   const friendly = (()=>{
     try {
-      const d=new Date(nextDraw+'T12:00:00');
-      const day=d.toLocaleDateString('en-US',{weekday:'long'});
-      const mon=d.toLocaleDateString('en-US',{month:'long'});
-      const n=d.getDate();
-      const sfx=[,'st','nd','rd'][((n%100-20)%10||n%100-10)?n%10:0]||'th';
+      if (!nextDraw) return '';
+      // nextDraw comes back as e.g. "Mon, Apr 28, 2026" — parse directly
+      const d = new Date(nextDraw);
+      if (isNaN(d.getTime())) return `Next drawing: ${nextDraw}`;
+      const day = d.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});
+      const mon = d.toLocaleDateString('en-US',{month:'long',timeZone:'UTC'});
+      const n   = d.getUTCDate();
+      const sfx = [,'st','nd','rd'][((n%100-20)%10||n%100-10)?n%10:0]||'th';
       return `These numbers are for the ${day}, ${mon} ${n}${sfx} drawing`;
     } catch { return nextDraw?`Next drawing: ${nextDraw}`:''; }
   })();
@@ -159,11 +247,29 @@ export default function App() {
   const runAnalysis = useCallback(async()=>{
     setLoading(l=>({...l,[activeGame]:true}));
     try {
-      const res=await predict(activeGame);
+      // Try up to 3 times — first attempt may time out waking up the free tier
+      let res = null;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          res = await predict(activeGame);
+          break;
+        } catch(e) {
+          lastErr = e;
+          if (attempt < 3 && e.message.includes('timed out')) {
+            await new Promise(r => setTimeout(r, 5000)); // wait 5s then retry
+            continue;
+          }
+          throw e;
+        }
+      }
+      if (!res) throw lastErr;
       setTickets(t=>({...t,[activeGame]:res}));
-      const acc=await getAccuracy(activeGame);
+      const acc = await getAccuracy(activeGame);
       setAccuracy(a=>({...a,[activeGame]:acc}));
-    } catch(e){ alert('Analysis failed: '+e.message); }
+    } catch(e){
+      alert('Analysis failed: ' + e.message);
+    }
     finally { setLoading(l=>({...l,[activeGame]:false})); }
   },[activeGame]);
 
@@ -206,7 +312,7 @@ export default function App() {
         <header style={{background:C.panel, borderBottom:`1px solid ${C.border}`,
                         padding:'20px 0 16px', textAlign:'center'}}>
           <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'12px'}}>
-            <img src={logo} alt="Numero" width={47} height={47}
+            <img src={logo} alt="Numero" width={42} height={42}
                  style={{borderRadius:'50%', objectFit:'contain'}}/>
             <h1 style={{fontFamily:'"Courier Prime","Courier New",monospace',
                         fontSize:'clamp(2rem,6vw,3rem)', fontWeight:'700',
@@ -232,7 +338,7 @@ export default function App() {
                       padding:'20px 0 16px', textAlign:'center'}}>
         <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'12px'}}>
           {/* Real PNG logo — bundled as static asset, always works */}
-          <img src={logo} alt="Numero" width={47} height={47}
+          <img src={logo} alt="Numero" width={42} height={42}
                style={{borderRadius:'50%', objectFit:'contain'}}/>
           <h1 style={{fontFamily:'"Courier Prime","Courier New",monospace',
                       fontSize:'clamp(2rem,6vw,3rem)', fontWeight:'700',
@@ -296,15 +402,7 @@ export default function App() {
           )}
 
           {isAnalyzing&&(
-            <div style={{textAlign:'center', padding:'40px 0', color:C.sub}}>
-              <div style={{display:'flex', justifyContent:'center', marginBottom:'12px'}}>
-                <RedBallSVG size={48} id="loadRB"/>
-              </div>
-              <div>Running 7-method analysis…</div>
-              <div style={{fontSize:'12px', marginTop:'6px', color:'#475569'}}>
-                This takes 15–30 seconds
-              </div>
-            </div>
+            <AnalyzingSpinner/>
           )}
 
           {!isAnalyzing&&!gameTickets&&(
