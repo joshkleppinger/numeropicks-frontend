@@ -129,12 +129,11 @@ function AnalyzingSpinner() {
   const [elapsed, setElapsed] = React.useState(0);
   const [angle, setAngle]     = React.useState(0);
 
+  // Angle updates every 62ms = ~16fps, advancing 3deg each = ~48deg/sec (fast spin)
   React.useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsed(e => e + 1);
-      setAngle(a  => (a + 4) % 360);
-    }, 1000);
-    return () => clearInterval(timer);
+    const fast = setInterval(() => setAngle(a => (a + 3) % 360), 62);
+    const slow = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => { clearInterval(fast); clearInterval(slow); };
   }, []);
 
   const remaining = Math.max(0, TOTAL - elapsed);
@@ -143,51 +142,53 @@ function AnalyzingSpinner() {
   const timeStr   = mins > 0
     ? `${mins}m ${String(secs).padStart(2,'0')}s remaining`
     : `${secs}s remaining`;
-  const pct       = Math.min(elapsed / TOTAL, 1);
+  const pct = Math.min(elapsed / TOTAL, 1);
 
-  // Rotating highlight arc on the ball
-  // Arc goes from angle to angle+90 degrees (clockwise)
-  const toRad = d => (d * Math.PI) / 180;
-  const SIZE  = 56;
-  const R     = SIZE / 2 - 2;
-  const cx    = SIZE / 2;
-  const cy    = SIZE / 2;
-  // SVG: 0deg = 3-o'clock, clockwise
-  const startDeg = angle - 90;  // rotate clockwise
-  const endDeg   = startDeg + 90;
-  const x1 = cx + R * Math.cos(toRad(startDeg));
-  const y1 = cy + R * Math.sin(toRad(startDeg));
-  const x2 = cx + R * Math.cos(toRad(endDeg));
-  const y2 = cy + R * Math.sin(toRad(endDeg));
-  const arcPath = `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`;
+  // Arc on perimeter, 72° extent (original size), fast spin
+  const toRad   = d => (d * Math.PI) / 180;
+  const SIZE    = 56;
+  const cx      = SIZE / 2;
+  const cy      = SIZE / 2;
+  const R_arc   = SIZE / 2 - 4;  // just inside the perimeter
+  const EXTENT  = 72;
+  const startDeg = angle;
+  const endDeg   = angle + EXTENT;
+  const x1 = cx + R_arc * Math.cos(toRad(startDeg));
+  const y1 = cy + R_arc * Math.sin(toRad(startDeg));
+  const x2 = cx + R_arc * Math.cos(toRad(endDeg));
+  const y2 = cy + R_arc * Math.sin(toRad(endDeg));
+  const arcPath = `M ${x1} ${y1} A ${R_arc} ${R_arc} 0 0 1 ${x2} ${y2}`;
+
+  const statusMsg = elapsed < 8 ? 'Waking up server…'
+                  : elapsed < 20 ? 'Loading draw history…'
+                  : 'Crunching the numbers…';
 
   return (
     <div style={{textAlign:'center', padding:'40px 0', color:'#94a3b8'}}>
-      {/* Animated red ball */}
       <div style={{display:'flex', justifyContent:'center', marginBottom:'16px'}}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-          <circle cx={cx+1} cy={cy+2} r={R} fill="rgba(0,0,0,0.2)"/>
-          <circle cx={cx}   cy={cy}   r={R} fill="#ef4444"/>
-          <circle cx={cx}   cy={cy}   r={R} fill="url(#spinGrad)"/>
+          <circle cx={cx+1} cy={cy+2} r={SIZE/2-2} fill="rgba(0,0,0,0.2)"/>
+          <circle cx={cx}   cy={cy}   r={SIZE/2-2} fill="#ef4444"/>
+          <circle cx={cx}   cy={cy}   r={SIZE/2-2} fill="url(#spinGrad)"/>
           <defs>
             <radialGradient id="spinGrad" cx="38%" cy="32%" r="58%">
               <stop offset="0%"   stopColor="#ff8080" stopOpacity="0.7"/>
               <stop offset="100%" stopColor="#7f0000" stopOpacity="0.4"/>
             </radialGradient>
           </defs>
-          {/* Rotating highlight arc */}
+          {/* Rotating arc — perimeter, 72° extent, fast spin */}
           <path d={arcPath} fill="none"
                 stroke="rgba(255,210,210,0.75)"
                 strokeWidth="2.5" strokeLinecap="round"/>
         </svg>
       </div>
 
-      <div style={{fontSize:'15px', fontWeight:'600', color:'#e2e8f0', marginBottom:'8px'}}>
+      <div style={{fontSize:'15px', fontWeight:'600', color:'#e2e8f0', marginBottom:'6px'}}>
         Running 7-method analysis…
       </div>
 
-      {/* Progress bar */}
-      <div style={{width:'200px', height:'4px', background:'#1e293b',
+      {/* Progress bar — estimate only, not real-time */}
+      <div style={{width:'200px', height:'3px', background:'#1e293b',
                    borderRadius:'2px', margin:'0 auto 10px', overflow:'hidden'}}>
         <div style={{width:`${pct*100}%`, height:'100%',
                      background:'#ef4444', borderRadius:'2px',
@@ -195,14 +196,11 @@ function AnalyzingSpinner() {
       </div>
 
       <div style={{fontSize:'13px', color:'#64748b'}}>
-        {elapsed < 5
-          ? 'Waking up server…'
-          : elapsed < 15
-          ? 'Loading draw history…'
-          : 'Crunching the numbers…'
-        }
+        {statusMsg}
         {remaining > 0 &&
-          <span style={{marginLeft:'8px', color:'#475569'}}>· {timeStr}</span>
+          <span style={{marginLeft:'8px', color:'#475569'}}>
+            · est. {timeStr}
+          </span>
         }
       </div>
     </div>
