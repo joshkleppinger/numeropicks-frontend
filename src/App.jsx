@@ -13,6 +13,17 @@ const C = {
   red:'#ef4444', green:'#10b981', sub:'#94a3b8',
   text:'#e2e8f0', grey:'#d1d5db', greyFg:'#1f2937',
 };
+
+/* Detects mobile screen (< 600px wide) */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 600);
+  React.useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
 const GAME_COLORS = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981' };
 const GAME_LABELS = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus' };
 
@@ -207,6 +218,7 @@ function AnalyzingSpinner() {
 }
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [activeGame,setActiveGame]     = useState('powerball');
   const [games,setGames]               = useState({});
   const [scrapeStatus,setScrapeStatus] = useState(null);
@@ -334,23 +346,24 @@ export default function App() {
 
       {/* Header */}
       <header style={{background:C.panel, borderBottom:`1px solid ${C.border}`,
-                      padding:'20px 0 16px', textAlign:'center'}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'12px'}}>
-          {/* Real PNG logo — bundled as static asset, always works */}
-          <img src={logo} alt="Numero" width={42} height={42}
+                      padding: isMobile ? '14px 0 10px' : '20px 0 16px',
+                      textAlign:'center'}}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'10px'}}>
+          <img src={logo} alt="Numero" width={isMobile?34:42} height={isMobile?34:42}
                style={{borderRadius:'50%', objectFit:'contain'}}/>
           <h1 style={{fontFamily:'"Courier Prime","Courier New",monospace',
-                      fontSize:'clamp(2rem,6vw,3rem)', fontWeight:'700',
-                      color:C.red, letterSpacing:'0.06em', margin:0}}>
+                      fontSize: isMobile ? '1.8rem' : 'clamp(2rem,6vw,3rem)',
+                      fontWeight:'700', color:C.red,
+                      letterSpacing:'0.06em', margin:0}}>
             NUMERO
           </h1>
         </div>
-        <p style={{color:C.sub, fontSize:'14px', marginTop:'6px'}}>
+        <p style={{color:C.sub, fontSize: isMobile ? '12px' : '14px', marginTop:'4px'}}>
           Multi-Game Stochastic Lottery Analysis
         </p>
-        <div style={{marginTop:'10px', fontSize:'12px', color:C.sub}}>
+        <div style={{marginTop:'6px', fontSize:'11px', color:C.sub}}>
           {game.row_count?`${game.row_count.toLocaleString()} draws loaded`:'Loading…'}
-          {scrapeStatus?.last_scrape&&(
+          {!isMobile && scrapeStatus?.last_scrape&&(
             <span style={{marginLeft:'12px'}}>
               · Last updated: {new Date(scrapeStatus.last_scrape).toLocaleDateString()}
             </span>
@@ -359,35 +372,44 @@ export default function App() {
       </header>
 
       {/* Game tabs */}
-      <div style={{display:'flex', gap:'8px', padding:'16px 16px 0',
+      <div style={{display:'flex', gap:'6px',
+                   padding: isMobile ? '10px 10px 0' : '16px 16px 0',
                    maxWidth:'800px', margin:'0 auto', overflowX:'auto'}}>
         {Object.keys(GAME_LABELS).map(key=>(
           <button key={key} onClick={()=>setActiveGame(key)}
                   style={{background:activeGame===key?GAME_COLORS[key]:C.panel,
                           color:activeGame===key?'#fff':C.sub,
                           border:`1px solid ${activeGame===key?GAME_COLORS[key]:C.border}`,
-                          borderRadius:'999px', padding:'8px 18px',
-                          fontWeight:'700', fontSize:'13px', cursor:'pointer',
-                          whiteSpace:'nowrap', fontFamily:'Inter,sans-serif',
+                          borderRadius:'999px',
+                          padding: isMobile ? '6px 12px' : '8px 18px',
+                          fontWeight:'700',
+                          fontSize: isMobile ? '12px' : '13px',
+                          cursor:'pointer', whiteSpace:'nowrap',
+                          fontFamily:'Inter,sans-serif',
                           boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
-                          transition:'all 0.15s'}}>
-            {GAME_LABELS[key]}
+                          transition:'all 0.15s', flexShrink:0}}>
+            {isMobile ? GAME_LABELS[key].replace(' Plus','').replace('Mega ','MM ').replace('Powerball','PB') : GAME_LABELS[key]}
           </button>
         ))}
       </div>
 
       <main style={{maxWidth:'800px', margin:'0 auto', padding:'16px'}}>
 
-        {/* Button row: Fetch | Analyze | Download */}
-        <div style={{display:'flex', gap:'10px', flexWrap:'wrap',
-                     marginBottom:'16px', alignItems:'center'}}>
-          <PillBtn onClick={runScrape} bg={scrapeBg} fg={scrapeFg} disabled={!!scrapeLabel}>
+        {/* Button row — wraps on mobile */}
+        <div style={{display:'flex', gap:'8px',
+                     flexWrap:'wrap', marginBottom:'16px',
+                     alignItems:'center',
+                     justifyContent: isMobile ? 'center' : 'flex-start'}}>
+          <PillBtn onClick={runScrape} bg={scrapeBg} fg={scrapeFg} disabled={!!scrapeLabel}
+                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
             {scrapeBtn}
           </PillBtn>
-          <PillBtn onClick={runAnalysis} bg={C.grey} fg={C.greyFg} disabled={isAnalyzing}>
+          <PillBtn onClick={runAnalysis} bg={C.grey} fg={C.greyFg} disabled={isAnalyzing}
+                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
             {isAnalyzing?'Analyzing…':'▶  Analyze & Predict'}
           </PillBtn>
-          <PillBtn onClick={()=>setShowDownloads(true)} bg={C.grey} fg={C.greyFg}>
+          <PillBtn onClick={()=>setShowDownloads(true)} bg={C.grey} fg={C.greyFg}
+                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
             ⬇  Download Data
           </PillBtn>
         </div>
