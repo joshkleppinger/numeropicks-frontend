@@ -388,29 +388,23 @@ export default function App() {
                           fontFamily:'Inter,sans-serif',
                           boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
                           transition:'all 0.15s', flexShrink:0}}>
-            {isMobile ? GAME_LABELS[key].replace(' Plus','').replace('Mega ','MM ').replace('Powerball','PB') : GAME_LABELS[key]}
+            {GAME_LABELS[key]}
           </button>
         ))}
       </div>
 
       <main style={{maxWidth:'800px', margin:'0 auto', padding:'16px'}}>
 
-        {/* Button row — wraps on mobile */}
+        {/* Button row — just Analyze button, centered */}
         <div style={{display:'flex', gap:'8px',
                      flexWrap:'wrap', marginBottom:'16px',
                      alignItems:'center',
                      justifyContent: isMobile ? 'center' : 'flex-start'}}>
-          <PillBtn onClick={runScrape} bg={scrapeBg} fg={scrapeFg} disabled={!!scrapeLabel}
-                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
-            {scrapeBtn}
-          </PillBtn>
           <PillBtn onClick={runAnalysis} bg={C.grey} fg={C.greyFg} disabled={isAnalyzing}
-                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
+                   style={{fontSize: isMobile?'15px':'16px',
+                           padding: isMobile?'12px 28px':'13px 32px',
+                           fontWeight:'700'}}>
             {isAnalyzing?'Analyzing…':'▶  Analyze & Predict'}
-          </PillBtn>
-          <PillBtn onClick={()=>setShowDownloads(true)} bg={C.grey} fg={C.greyFg}
-                   style={{fontSize: isMobile?'12px':'14px', padding: isMobile?'8px 14px':'10px 20px'}}>
-            ⬇  Download Data
           </PillBtn>
         </div>
 
@@ -462,8 +456,18 @@ export default function App() {
 
       </main>
 
+      {/* Download past drawing results — bottom of page */}
+      <div style={{textAlign:'center', padding:'12px 16px 0', maxWidth:'800px', margin:'0 auto'}}>
+        <button onClick={()=>setShowDownloads(true)}
+                style={{background:'transparent', border:`1px solid ${C.border}`,
+                        color:C.sub, borderRadius:'999px', padding:'8px 20px',
+                        fontSize:'13px', cursor:'pointer', fontFamily:'Inter,sans-serif'}}>
+          ⬇  Download past drawing results
+        </button>
+      </div>
+
       <footer style={{textAlign:'center', padding:'24px', color:'#334155',
-                      fontSize:'12px', borderTop:`1px solid ${C.border}`, marginTop:'8px'}}>
+                      fontSize:'12px', borderTop:`1px solid ${C.border}`, marginTop:'16px'}}>
         Numero · For entertainment purposes only · numeropicks.com
       </footer>
     </div>
