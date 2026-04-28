@@ -222,7 +222,13 @@ export default function App() {
   const [activeGame,setActiveGame]     = useState('powerball');
   const [games,setGames]               = useState({});
   const [scrapeStatus,setScrapeStatus] = useState(null);
-  const [tickets,setTickets]           = useState({});
+  const [tickets,setTickets]           = useState(() => {
+    // Restore last predictions from localStorage on page load
+    try {
+      const saved = localStorage.getItem('numero_tickets');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [accuracy,setAccuracy]         = useState({});
   const [loading,setLoading]           = useState({});
   const [copyLabel,setCopyLabel]       = useState('📋  Copy Numbers');
@@ -233,6 +239,12 @@ export default function App() {
     getGames().then(setGames).catch(()=>{});
     getScrapeStatus().then(setScrapeStatus).catch(()=>{});
   },[]);
+
+  // Persist tickets to localStorage whenever they update
+  useEffect(()=>{
+    try { localStorage.setItem('numero_tickets', JSON.stringify(tickets)); }
+    catch {}
+  },[tickets]);
 
   useEffect(()=>{
     getAccuracy(activeGame)
