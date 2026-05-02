@@ -24,8 +24,8 @@ function useIsMobile() {
   }, []);
   return isMobile;
 }
-const GAME_COLORS = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981' };
-const GAME_LABELS = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus' };
+const GAME_COLORS = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
+const GAME_LABELS = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus', daily3:'Daily 3', daily4:'Daily 4' };
 
 /* Red ball SVG — used for empty/loading states only (not the header logo) */
 function RedBallSVG({ size=48, id='rb' }) {
@@ -447,7 +447,24 @@ export default function App() {
                 <TicketRow key={i} index={i+1} balls={t.balls}
                            special={t.special} specialName={gameTickets.special_name}/>
               ))}
-              <div style={{marginTop:'12px'}}>
+              {/* Brier Score badge */}
+              {gameTickets.brier && (
+                <div style={{marginTop:'10px', marginBottom:'4px',
+                             display:'flex', alignItems:'center', gap:'8px',
+                             flexWrap:'wrap'}}>
+                  <div style={{background:'#1e293b', borderRadius:'10px',
+                               padding:'6px 12px', fontSize:'12px'}}>
+                    <span style={{color:'#64748b'}}>Brier Score: </span>
+                    <span style={{color:'#e2e8f0', fontWeight:'700'}}>
+                      {gameTickets.brier.recent_brier?.toFixed(5)}
+                    </span>
+                    <span style={{color:'#64748b', marginLeft:'6px'}}>
+                      (baseline: {gameTickets.brier.baseline_brier?.toFixed(5)})
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div style={{marginTop:'8px'}}>
                 <PillBtn onClick={copyNumbers}
                          bg={copyLabel.includes('Copied')?C.green:C.grey}
                          fg={copyLabel.includes('Copied')?'#fff':C.greyFg}>
