@@ -78,13 +78,13 @@ function Card({ title, children, style={} }) {
 }
 
 /* Download page with inline table viewer */
-const GAME_LABELS_DL = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus' };
-const SPECIAL_NAMES  = { powerball:'PB', megamillions:'MB', superlotto:'MN' };
+const GAME_LABELS_DL = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus', daily3:'Daily 3', daily4:'Daily 4' };
+const SPECIAL_NAMES  = { powerball:'PB', megamillions:'MB', superlotto:'MN', daily3:null, daily4:null };
 const API_BASE_DL = process.env.REACT_APP_API_URL || 'https://numeropicks-backend-1.onrender.com';
 
 function DownloadsPage({ games, onBack }) {
   const [activeTab, setActiveTab] = React.useState('powerball');
-  const tabColor = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981' };
+  const tabColor = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
 
   return (
     <div style={{maxWidth:'900px', margin:'0 auto', padding:'16px'}}>
