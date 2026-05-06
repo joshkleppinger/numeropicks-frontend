@@ -102,12 +102,14 @@ export function DataTable({ gameKey, gameName, specialName, apiBase }) {
                           textTransform:'uppercase'}}>
                 Numbers
               </th>
-              <th style={{padding:'10px 14px', textAlign:'center',
-                          color:C.red, fontWeight:'700',
-                          fontSize:'11px', letterSpacing:'0.05em',
-                          textTransform:'uppercase'}}>
-                {specialName}
-              </th>
+              {specialName && (
+                <th style={{padding:'10px 14px', textAlign:'center',
+                            color:C.red, fontWeight:'700',
+                            fontSize:'11px', letterSpacing:'0.05em',
+                            textTransform:'uppercase'}}>
+                  {specialName}
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -127,9 +129,11 @@ export function DataTable({ gameKey, gameName, specialName, apiBase }) {
                     ))}
                   </div>
                 </td>
-                <td style={{padding:'8px 14px', textAlign:'center'}}>
-                  <span style={ballStyle(true)}>{row.special}</span>
-                </td>
+                {specialName && (
+                  <td style={{padding:'8px 14px', textAlign:'center'}}>
+                    <span style={ballStyle(true)}>{row.special}</span>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
