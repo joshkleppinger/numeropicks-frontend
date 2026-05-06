@@ -384,25 +384,66 @@ export default function App() {
       </header>
 
       {/* Game tabs */}
-      <div style={{display:'flex', gap:'6px',
+      <div style={{display:'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '8px' : '6px',
                    padding: isMobile ? '10px 10px 0' : '16px 16px 0',
                    maxWidth:'800px', margin:'0 auto', overflowX:'auto'}}>
-        {Object.keys(GAME_LABELS).map(key=>(
-          <button key={key} onClick={()=>setActiveGame(key)}
-                  style={{background:activeGame===key?GAME_COLORS[key]:C.panel,
-                          color:activeGame===key?'#fff':C.sub,
-                          border:`1px solid ${activeGame===key?GAME_COLORS[key]:C.border}`,
-                          borderRadius:'999px',
-                          padding: isMobile ? '6px 12px' : '8px 18px',
-                          fontWeight:'700',
-                          fontSize: isMobile ? '12px' : '13px',
-                          cursor:'pointer', whiteSpace:'nowrap',
-                          fontFamily:'Inter,sans-serif',
-                          boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
-                          transition:'all 0.15s', flexShrink:0}}>
-            {GAME_LABELS[key]}
-          </button>
-        ))}
+        {/* Row 1: Big 3 games (or all 5 on desktop) */}
+        <div style={{display:'flex', gap:'6px', justifyContent: isMobile ? 'center' : 'flex-start', flexWrap:'wrap'}}>
+          {['powerball','megamillions','superlotto'].map(key=>(
+            <button key={key} onClick={()=>setActiveGame(key)}
+                    style={{background:activeGame===key?GAME_COLORS[key]:C.panel,
+                            color:activeGame===key?'#fff':C.sub,
+                            border:`1px solid ${activeGame===key?GAME_COLORS[key]:C.border}`,
+                            borderRadius:'999px',
+                            padding: isMobile ? '6px 12px' : '8px 18px',
+                            fontWeight:'700',
+                            fontSize: isMobile ? '12px' : '13px',
+                            cursor:'pointer', whiteSpace:'nowrap',
+                            fontFamily:'Inter,sans-serif',
+                            boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
+                            transition:'all 0.15s', flexShrink:0}}>
+              {GAME_LABELS[key]}
+            </button>
+          ))}
+          {/* Desktop: show Daily 3/4 in same row */}
+          {!isMobile && ['daily3','daily4'].map(key=>(
+            <button key={key} onClick={()=>setActiveGame(key)}
+                    style={{background:activeGame===key?GAME_COLORS[key]:C.panel,
+                            color:activeGame===key?'#fff':C.sub,
+                            border:`1px solid ${activeGame===key?GAME_COLORS[key]:C.border}`,
+                            borderRadius:'999px',
+                            padding:'8px 18px',
+                            fontWeight:'700',
+                            fontSize:'13px',
+                            cursor:'pointer', whiteSpace:'nowrap',
+                            fontFamily:'Inter,sans-serif',
+                            boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
+                            transition:'all 0.15s', flexShrink:0}}>
+              {GAME_LABELS[key]}
+            </button>
+          ))}
+        </div>
+        {/* Row 2: Daily 3/4 centered (mobile only) */}
+        {isMobile && (
+          <div style={{display:'flex', gap:'6px', justifyContent:'center'}}>
+            {['daily3','daily4'].map(key=>(
+              <button key={key} onClick={()=>setActiveGame(key)}
+                      style={{background:activeGame===key?GAME_COLORS[key]:C.panel,
+                              color:activeGame===key?'#fff':C.sub,
+                              border:`1px solid ${activeGame===key?GAME_COLORS[key]:C.border}`,
+                              borderRadius:'999px',
+                              padding:'6px 12px',
+                              fontWeight:'700',
+                              fontSize:'12px',
+                              cursor:'pointer', whiteSpace:'nowrap',
+                              fontFamily:'Inter,sans-serif',
+                              boxShadow:activeGame===key?`0 2px 8px ${GAME_COLORS[key]}55`:'none',
+                              transition:'all 0.15s', flexShrink:0}}>
+                {GAME_LABELS[key]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <main style={{maxWidth:'800px', margin:'0 auto', padding:'16px'}}>
