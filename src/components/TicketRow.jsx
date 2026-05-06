@@ -43,18 +43,20 @@ export function TicketRow({ index, balls, special, specialName }) {
         <Ball key={i} number={b} isSpecial={false} size={ballSize} />
       ))}
 
-      {/* Separator */}
-      <span style={{
-        color:     '#475569',
-        fontSize:  isMobile ? '10px' : '13px',
-        margin:    '0 2px',
-        flexShrink: 0,
-      }}>
-        {specialName}:
-      </span>
-
-      {/* Special ball */}
-      <Ball number={special} isSpecial={true} size={ballSize} />
+      {/* Separator + Special ball — only for games that have one */}
+      {special != null && (
+        <>
+          <span style={{
+            color:     '#475569',
+            fontSize:  isMobile ? '10px' : '13px',
+            margin:    '0 2px',
+            flexShrink: 0,
+          }}>
+            {specialName}:
+          </span>
+          <Ball number={special} isSpecial={true} size={ballSize} />
+        </>
+      )}
     </div>
   );
 }
