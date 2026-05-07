@@ -520,7 +520,9 @@ export default function App() {
         <Card title="Analysis Accuracy">
           {!gameAcc
             ?<div style={{color:C.sub, padding:'8px 0'}}>Loading accuracy data…</div>
-            :<AccuracyPanel data={gameAcc} specialName={game.special_name||'SP'}/>
+            :<AccuracyPanel data={gameAcc}
+                            specialName={game.special_name}
+                            whiteCount={game.white_count}/>
           }
         </Card>
 
