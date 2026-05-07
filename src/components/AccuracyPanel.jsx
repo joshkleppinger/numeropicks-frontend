@@ -1,8 +1,9 @@
 import React from 'react';
 
-export function AccuracyPanel({ data, specialName }) {
+export function AccuracyPanel({ data, specialName, whiteCount }) {
   if (!data) return null;
   const { summary, evaluated, pending } = data;
+  const denom = whiteCount || 5;
 
   const scoreColor = (pct) => {
     if (pct >= 60) return '#10b981';
@@ -22,8 +23,10 @@ export function AccuracyPanel({ data, specialName }) {
         }}>
           {[
             { label: 'Last Drawing', value: `${summary.last_score}%`, color: scoreColor(summary.last_score) },
-            { label: 'Avg Matches', value: `${summary.avg_white_matches}/5` },
-            { label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` },
+            { label: 'Avg Matches', value: `${summary.avg_white_matches}/${denom}` },
+            ...(specialName
+              ? [{ label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` }]
+              : []),
             { label: 'Rounds Tracked', value: summary.total_rounds },
           ].map(({ label, value, color }) => (
             <div key={label} style={{
@@ -95,7 +98,7 @@ export function AccuracyPanel({ data, specialName }) {
               </div>
               <div style={{ color: '#475569', fontSize: '12px' }}>
                 {r.white_matches} match{r.white_matches !== 1 ? 'es' : ''}
-                {r.sp_match ? ` + ${specialName}` : ''}
+                {specialName && r.sp_match ? ` + ${specialName}` : ''}
               </div>
             </div>
           ))}
