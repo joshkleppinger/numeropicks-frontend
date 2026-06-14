@@ -27,6 +27,19 @@ function useIsMobile() {
 const GAME_COLORS = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
 const GAME_LABELS = { powerball:'Powerball', megamillions:'Mega Millions', superlotto:'SuperLotto Plus', daily3:'Daily 3', daily4:'Daily 4' };
 
+/* Convert any backend-supplied date string (e.g. "Sat, May 17, 2026", "May 17,
+ * 2026", "2026-05-17") to American M/D/YYYY format. Returns original input on
+ * parse failure so we never display "Invalid Date" to the user. */
+export function formatDateMDY(input) {
+  if (!input) return '';
+  const s = String(input).trim();
+  // Already in M/D/YYYY or M/D/YY form? Just return as-is.
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) return s;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+}
+
 /* Red ball SVG — used for empty/loading states only (not the header logo) */
 function RedBallSVG({ size=48, id='rb' }) {
   return (
@@ -256,15 +269,9 @@ export default function App() {
   const friendly = (()=>{
     try {
       if (!nextDraw) return '';
-      // nextDraw comes back as e.g. "Mon, Apr 28, 2026" — parse directly
-      const d = new Date(nextDraw);
-      if (isNaN(d.getTime())) return `Next drawing: ${nextDraw}`;
-      const day = d.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});
-      const mon = d.toLocaleDateString('en-US',{month:'long',timeZone:'UTC'});
-      const n   = d.getUTCDate();
-      const sfx = [,'st','nd','rd'][((n%100-20)%10||n%100-10)?n%10:0]||'th';
-      return `These numbers are for the ${day}, ${mon} ${n}${sfx} drawing`;
-    } catch { return nextDraw?`Next drawing: ${nextDraw}`:''; }
+      const formatted = formatDateMDY(nextDraw);
+      return `These numbers are for the ${formatted} drawing`;
+    } catch { return nextDraw?`Next drawing: ${formatDateMDY(nextDraw)}`:''; }
   })();
 
   const runAnalysis = useCallback(async()=>{
@@ -310,7 +317,7 @@ export default function App() {
   const copyNumbers = ()=>{
     const t=tickets[activeGame]; if(!t) return;
     const sn=games[activeGame]?.special_name||'SP';
-    const lines=[`Numero — ${GAME_LABELS[activeGame]} analysis for ${nextDraw}`,''];
+    const lines=[`Numero — ${GAME_LABELS[activeGame]} analysis for ${formatDateMDY(nextDraw)}`,''];
     t.tickets.forEach((tk,i)=>lines.push(
       `#${i+1}:  ${tk.balls.map(b=>String(b).padStart(2)).join('  ')}    ${sn}: ${tk.special}`
     ));
@@ -377,7 +384,7 @@ export default function App() {
           {game.row_count?`${game.row_count.toLocaleString()} draws loaded`:'Loading…'}
           {!isMobile && scrapeStatus?.last_scrape&&(
             <span style={{marginLeft:'12px'}}>
-              · Last updated: {new Date(scrapeStatus.last_scrape).toLocaleDateString()}
+              · Last updated: {formatDateMDY(scrapeStatus.last_scrape)}
             </span>
           )}
         </div>
