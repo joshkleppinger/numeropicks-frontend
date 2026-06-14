@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDateMDY } from '../App';
 
 const C = {
   bg:'#0a0e1a', panel:'#111827', border:'#1e293b',
@@ -120,7 +121,7 @@ export function DataTable({ gameKey, gameName, specialName, apiBase }) {
               }}>
                 <td style={{padding:'8px 14px', color:C.sub,
                              whiteSpace:'nowrap', fontSize:'12px'}}>
-                  {row.date}
+                  {formatDateMDY(row.date)}
                 </td>
                 <td style={{padding:'8px 14px'}}>
                   <div style={{display:'flex', flexWrap:'wrap', gap:'2px'}}>
