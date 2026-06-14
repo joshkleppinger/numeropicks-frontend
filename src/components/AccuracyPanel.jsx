@@ -1,9 +1,9 @@
 import React from 'react';
+import { formatDateMDY } from '../App';
 
-export function AccuracyPanel({ data, specialName, whiteCount }) {
+export function AccuracyPanel({ data, specialName }) {
   if (!data) return null;
   const { summary, evaluated, pending } = data;
-  const denom = whiteCount || 5;
 
   const scoreColor = (pct) => {
     if (pct >= 60) return '#10b981';
@@ -23,10 +23,8 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
         }}>
           {[
             { label: 'Last Drawing', value: `${summary.last_score}%`, color: scoreColor(summary.last_score) },
-            { label: 'Avg Matches', value: `${summary.avg_white_matches}/${denom}` },
-            ...(specialName
-              ? [{ label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` }]
-              : []),
+            { label: 'Avg Matches', value: `${summary.avg_white_matches}/5` },
+            { label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` },
             { label: 'Rounds Tracked', value: summary.total_rounds },
           ].map(({ label, value, color }) => (
             <div key={label} style={{
@@ -66,7 +64,7 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
               fontSize:     '13px',
               color:        '#94a3b8',
             }}>
-              <span style={{ color: '#e2e8f0' }}>{p.target_draw_date}</span>
+              <span style={{ color: '#e2e8f0' }}>{formatDateMDY(p.target_draw_date)}</span>
               {p.awaiting_scrape && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠ awaiting scrape</span>}
             </div>
           ))}
@@ -88,7 +86,7 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
               fontSize:     '13px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ color: '#94a3b8' }}>{r.target_draw_date}</span>
+                <span style={{ color: '#94a3b8' }}>{formatDateMDY(r.target_draw_date)}</span>
                 <span style={{
                   color:      scoreColor(Math.round(r.score * 100)),
                   fontWeight: '700',
@@ -98,7 +96,7 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
               </div>
               <div style={{ color: '#475569', fontSize: '12px' }}>
                 {r.white_matches} match{r.white_matches !== 1 ? 'es' : ''}
-                {specialName && r.sp_match ? ` + ${specialName}` : ''}
+                {r.sp_match ? ` + ${specialName}` : ''}
               </div>
             </div>
           ))}
