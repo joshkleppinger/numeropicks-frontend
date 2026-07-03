@@ -32,7 +32,17 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
           marginBottom:  '16px',
         }}>
           {[
-            { label: 'Last Drawing', value: `${summary.last_score}%`, color: scoreColor(summary.last_score) },
+            (() => {
+              // For Daily 3/4 (no special ball) the last-drawing score is
+              // recomputed from the most recent evaluated round's match count.
+              // Otherwise fall back to whatever the backend supplied.
+              let ls = summary.last_score;
+              if (!hasSpecial && whiteCount && evaluated && evaluated.length) {
+                const last = evaluated[evaluated.length - 1];
+                ls = Math.round((last.white_matches / whiteCount) * 100);
+              }
+              return { label: 'Last Drawing', value: `${ls}%`, color: scoreColor(ls) };
+            })(),
             { label: 'Avg Matches',
               value: `${summary.avg_white_matches}/${whiteCount || 5}` },
             hasSpecial && { label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` },
