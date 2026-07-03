@@ -145,6 +145,142 @@ function DownloadsPage({ games, onBack }) {
   );
 }
 
+/* ── Predictions download page ─────────────────────────────────────────────── */
+function PredictionsPage({ onBack }) {
+  const games = { powerball:'Powerball', megamillions:'Mega Millions',
+                  superlotto:'SuperLotto Plus', daily3:'Daily 3', daily4:'Daily 4' };
+  const tabColor = { powerball:'#ef4444', megamillions:'#3b82f6',
+                     superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
+  return (
+    <div style={{maxWidth:'900px', margin:'0 auto', padding:'16px'}}>
+      <button onClick={onBack}
+              style={{background:'transparent', border:`1px solid ${C.border}`, color:C.sub,
+                      borderRadius:'999px', padding:'8px 16px', fontSize:'13px',
+                      cursor:'pointer', marginBottom:'20px', fontFamily:'Inter,sans-serif'}}>
+        ← Back
+      </button>
+      <h2 style={{color:C.text, fontSize:'20px', fontWeight:'700', marginBottom:'4px'}}>
+        Download Past Picks
+      </h2>
+      <p style={{color:C.sub, fontSize:'13px', marginBottom:'20px'}}>
+        Download every prediction Numero has ever made for a game.
+      </p>
+      <div style={{display:'grid', gap:'12px'}}>
+        {Object.entries(games).map(([key, label]) => (
+          <div key={key} style={{background:C.panel, borderRadius:'14px',
+                                 padding:'16px', border:`1px solid ${C.border}`}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between',
+                         flexWrap:'wrap', gap:'12px'}}>
+              <h3 style={{color:tabColor[key], fontSize:'16px', fontWeight:'700', margin:0}}>
+                {label}
+              </h3>
+              <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                <a href={`${API_BASE_DL}/download/${key}/predictions/csv`}
+                   style={{background:'#1e40af', color:'#fff', textDecoration:'none',
+                           padding:'8px 16px', borderRadius:'999px', fontSize:'13px',
+                           fontWeight:'700'}}>
+                  ⬇ CSV
+                </a>
+                <a href={`${API_BASE_DL}/download/${key}/predictions/xlsx`}
+                   style={{background:'#166534', color:'#fff', textDecoration:'none',
+                           padding:'8px 16px', borderRadius:'999px', fontSize:'13px',
+                           fontWeight:'700'}}>
+                  ⬇ Excel
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── How it works page ─────────────────────────────────────────────────────── */
+function HowItWorksPage({ onBack }) {
+  const sec = { color:C.text, fontSize:'17px', fontWeight:'700',
+                marginTop:'24px', marginBottom:'8px' };
+  const body = { color:C.sub, fontSize:'14px', lineHeight:'1.6',
+                 marginBottom:'8px' };
+  return (
+    <div style={{maxWidth:'760px', margin:'0 auto', padding:'16px'}}>
+      <button onClick={onBack}
+              style={{background:'transparent', border:`1px solid ${C.border}`, color:C.sub,
+                      borderRadius:'999px', padding:'8px 16px', fontSize:'13px',
+                      cursor:'pointer', marginBottom:'20px', fontFamily:'Inter,sans-serif'}}>
+        ← Back
+      </button>
+      <h2 style={{color:C.text, fontSize:'22px', fontWeight:'700', marginBottom:'4px'}}>
+        How Numero Works
+      </h2>
+      <p style={{color:C.sub, fontSize:'13px', marginBottom:'8px'}}>
+        A behind-the-scenes tour of the analysis pipeline.
+      </p>
+
+      <h3 style={sec}>1. Data collection</h3>
+      <p style={body}>
+        Numero pulls historical results for all five games directly from the
+        official California Lottery JSON API. Powerball, Mega Millions, SuperLotto
+        Plus, Daily 3, and Daily 4 are refreshed on a schedule and stored in a
+        cloud database. Every draw ever played for a game is available for the
+        engine to train on.
+      </p>
+
+      <h3 style={sec}>2. Era filtering</h3>
+      <p style={body}>
+        Games change over time — Powerball added numbers 60&nbsp;through&nbsp;69 in
+        2015, Mega Millions shrank from 75 to 70 in 2017. Numero automatically
+        detects and filters out any draw from an old rule-set so predictions
+        are trained only on data reflecting current game rules.
+      </p>
+
+      <h3 style={sec}>3. The seven-method ensemble</h3>
+      <p style={body}>
+        Every prediction is the blended output of seven independent models:
+        frequency analysis, Markov transitions, spectral mean-reversion, gap
+        weighting, a neural network, Monte Carlo sampling with Halton
+        low-discrepancy sequences, and time-decayed frequency. Each method
+        produces its own probability distribution over the number range.
+      </p>
+
+      <h3 style={sec}>4. Bayesian weight updating</h3>
+      <p style={body}>
+        The seven method outputs aren&apos;t weighted equally forever. Numero
+        continuously scores each one against the most recent draws using the
+        Brier score. Methods that have been more accurate lately get their
+        weight in the final blend increased.
+      </p>
+
+      <h3 style={sec}>5. Ticket generation</h3>
+      <p style={body}>
+        Once the final blended probabilities are set, Numero samples five
+        tickets that are diverse across number bands, avoid duplicates, and
+        favor high-probability picks. For Daily 3 and Daily 4 the tickets are
+        position-aware so each digit is predicted for its specific slot.
+      </p>
+
+      <h3 style={sec}>6. Accuracy tracking</h3>
+      <p style={body}>
+        Every prediction is saved permanently with the target draw date. When
+        the actual result comes in, Numero compares it against every past
+        prediction, records the score, and updates the rolling accuracy metrics
+        you see on the accuracy panel. Nothing is thrown away — the same
+        history you see was used to test the engine on itself.
+      </p>
+
+      <h3 style={sec}>An honest note</h3>
+      <p style={body}>
+        Modern lotteries use certified random draws, so no model can genuinely
+        beat the house edge over the long run. Numero can identify
+        &ldquo;structured&rdquo; picks that avoid obviously bad tickets
+        (birthday clusters, all-consecutive numbers, etc.) so if you do win, you
+        are less likely to split the prize with dozens of others. That is real,
+        modest value — treat everything else as entertainment.
+      </p>
+    </div>
+  );
+}
+
 /* ── Main App ────────────────────────────────────────────────────────────── */
 
 /* ── Animated analysing spinner with rotating highlight + countdown ────────── */
@@ -247,6 +383,8 @@ export default function App() {
   const [copyLabel,setCopyLabel]       = useState('📋  Copy Numbers');
   const [scrapeLabel,setScrapeLabel]   = useState(null);
   const [showDownloads,setShowDownloads] = useState(false);
+  const [showPredictions,setShowPredictions] = useState(false);
+  const [showHowItWorks,setShowHowItWorks] = useState(false);
 
   useEffect(()=>{
     getGames().then(setGames).catch(()=>{});
@@ -352,6 +490,56 @@ export default function App() {
           </div>
         </header>
         <DownloadsPage games={games} onBack={()=>setShowDownloads(false)}/>
+        <footer style={{textAlign:'center', padding:'24px', color:'#334155',
+                        fontSize:'12px', borderTop:`1px solid ${C.border}`, marginTop:'8px'}}>
+          Numero · For entertainment purposes only · numeropicks.com
+        </footer>
+      </div>
+    );
+  }
+
+  /* Predictions page */
+  if (showPredictions) {
+    return (
+      <div style={{minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'Inter,sans-serif'}}>
+        <header style={{background:C.panel, borderBottom:`1px solid ${C.border}`,
+                        padding:'20px 0 16px', textAlign:'center'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'12px'}}>
+            <img src={logo} alt="Numero" width={42} height={42}
+                 style={{borderRadius:'50%', objectFit:'contain'}}/>
+            <h1 style={{fontFamily:'"Courier Prime","Courier New",monospace',
+                        fontSize:'clamp(2rem,6vw,3rem)', fontWeight:'700',
+                        color:C.red, letterSpacing:'0.06em', margin:0}}>
+              NUMERO
+            </h1>
+          </div>
+        </header>
+        <PredictionsPage onBack={()=>setShowPredictions(false)}/>
+        <footer style={{textAlign:'center', padding:'24px', color:'#334155',
+                        fontSize:'12px', borderTop:`1px solid ${C.border}`, marginTop:'8px'}}>
+          Numero · For entertainment purposes only · numeropicks.com
+        </footer>
+      </div>
+    );
+  }
+
+  /* How It Works page */
+  if (showHowItWorks) {
+    return (
+      <div style={{minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'Inter,sans-serif'}}>
+        <header style={{background:C.panel, borderBottom:`1px solid ${C.border}`,
+                        padding:'20px 0 16px', textAlign:'center'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'12px'}}>
+            <img src={logo} alt="Numero" width={42} height={42}
+                 style={{borderRadius:'50%', objectFit:'contain'}}/>
+            <h1 style={{fontFamily:'"Courier Prime","Courier New",monospace',
+                        fontSize:'clamp(2rem,6vw,3rem)', fontWeight:'700',
+                        color:C.red, letterSpacing:'0.06em', margin:0}}>
+              NUMERO
+            </h1>
+          </div>
+        </header>
+        <HowItWorksPage onBack={()=>setShowHowItWorks(false)}/>
         <footer style={{textAlign:'center', padding:'24px', color:'#334155',
                         fontSize:'12px', borderTop:`1px solid ${C.border}`, marginTop:'8px'}}>
           Numero · For entertainment purposes only · numeropicks.com
@@ -535,13 +723,27 @@ export default function App() {
 
       </main>
 
-      {/* Download past drawing results — bottom of page */}
-      <div style={{textAlign:'center', padding:'12px 16px 0', maxWidth:'800px', margin:'0 auto'}}>
+      {/* Bottom actions */}
+      <div style={{textAlign:'center', padding:'12px 16px 0', maxWidth:'800px',
+                   margin:'0 auto', display:'flex', flexWrap:'wrap',
+                   gap:'8px', justifyContent:'center'}}>
         <button onClick={()=>setShowDownloads(true)}
                 style={{background:'transparent', border:`1px solid ${C.border}`,
                         color:C.sub, borderRadius:'999px', padding:'8px 20px',
                         fontSize:'13px', cursor:'pointer', fontFamily:'Inter,sans-serif'}}>
           ⬇  Download past drawing results
+        </button>
+        <button onClick={()=>setShowPredictions(true)}
+                style={{background:'transparent', border:`1px solid ${C.border}`,
+                        color:C.sub, borderRadius:'999px', padding:'8px 20px',
+                        fontSize:'13px', cursor:'pointer', fontFamily:'Inter,sans-serif'}}>
+          ⬇  Download past picks
+        </button>
+        <button onClick={()=>setShowHowItWorks(true)}
+                style={{background:'transparent', border:`1px solid ${C.border}`,
+                        color:C.sub, borderRadius:'999px', padding:'8px 20px',
+                        fontSize:'13px', cursor:'pointer', fontFamily:'Inter,sans-serif'}}>
+          ℹ  How it works
         </button>
       </div>
 
