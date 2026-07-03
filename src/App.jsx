@@ -146,11 +146,129 @@ function DownloadsPage({ games, onBack }) {
 }
 
 /* ── Predictions download page ─────────────────────────────────────────────── */
+function PredictionsTable({ gameKey, specialName, apiBase, whiteCount }) {
+  const [rows, setRows] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const [page, setPage] = React.useState(0);
+  const PAGE = 25;
+
+  React.useEffect(() => {
+    setLoading(true);
+    setPage(0);
+    fetch(`${apiBase}/accuracy/${gameKey}`)
+      .then(r => r.json())
+      .then(d => {
+        const all = [];
+        (d.evaluated || []).forEach(p => all.push({ ...p, evaluated: true }));
+        (d.pending || []).forEach(p => all.push({ ...p, evaluated: false }));
+        // Newest first
+        all.sort((a, b) => {
+          const da = new Date(a.target_draw_date).getTime();
+          const db = new Date(b.target_draw_date).getTime();
+          if (isNaN(da) || isNaN(db)) return 0;
+          return db - da;
+        });
+        setRows(all);
+        setLoading(false);
+      })
+      .catch(e => { setError(e.message); setLoading(false); });
+  }, [gameKey, apiBase]);
+
+  const pageRows = rows.slice(page * PAGE, (page + 1) * PAGE);
+  const totalPages = Math.ceil(rows.length / PAGE);
+
+  const ballStyle = (isSpecial) => ({
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '28px', height: '28px', borderRadius: '50%',
+    background: isSpecial ? C.red : '#ffffff',
+    color: isSpecial ? '#fff' : '#111',
+    fontWeight: '700', fontSize: '12px', margin: '0 2px', flexShrink: 0,
+  });
+
+  if (loading) return <div style={{textAlign:'center', padding:'40px', color:C.sub}}>Loading past picks…</div>;
+  if (error) return <div style={{textAlign:'center', padding:'40px', color:C.red}}>Error: {error}</div>;
+  if (!rows.length) return <div style={{textAlign:'center', padding:'40px', color:C.sub}}>No past picks yet.</div>;
+
+  return (
+    <>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center',
+                   flexWrap:'wrap', gap:'12px', marginBottom:'12px'}}>
+        <div style={{color:C.sub, fontSize:'13px'}}>
+          {rows.length.toLocaleString()} picks · showing {page*PAGE+1}–{Math.min((page+1)*PAGE, rows.length)}
+        </div>
+        <div style={{display:'flex', gap:'8px'}}>
+          <a href={`${apiBase}/download/${gameKey}/predictions/csv`}
+             style={{background:'#1e40af', color:'#fff', textDecoration:'none',
+                     padding:'6px 14px', borderRadius:'999px', fontSize:'13px',
+                     fontWeight:'700'}}>⬇ Download CSV</a>
+          <a href={`${apiBase}/download/${gameKey}/predictions/xlsx`}
+             style={{background:'#166534', color:'#fff', textDecoration:'none',
+                     padding:'6px 14px', borderRadius:'999px', fontSize:'13px',
+                     fontWeight:'700'}}>⬇ Download Excel</a>
+        </div>
+      </div>
+      <div style={{overflowX:'auto'}}>
+        <table style={{width:'100%', borderCollapse:'collapse', fontSize:'13px'}}>
+          <thead>
+            <tr style={{color:C.sub, borderBottom:`1px solid ${C.border}`}}>
+              <th style={{textAlign:'left', padding:'10px 8px'}}>TARGET DATE</th>
+              <th style={{textAlign:'left', padding:'10px 8px'}}>PICKED NUMBERS</th>
+              {specialName && <th style={{textAlign:'left', padding:'10px 8px', color:C.red}}>{specialName}</th>}
+              <th style={{textAlign:'left', padding:'10px 8px'}}>RESULT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.map((r, i) => (
+              <tr key={i} style={{borderBottom:`1px solid ${C.border}`, background: i%2 ? '#0f172a' : 'transparent'}}>
+                <td style={{padding:'10px 8px', whiteSpace:'nowrap'}}>{formatDateMDY(r.target_draw_date)}</td>
+                <td style={{padding:'10px 8px'}}>
+                  {(r.pred_balls || []).map((b, j) => <span key={j} style={ballStyle(false)}>{b}</span>)}
+                </td>
+                {specialName && (
+                  <td style={{padding:'10px 8px'}}>
+                    {r.pred_special != null && r.pred_special !== '' ? <span style={ballStyle(true)}>{r.pred_special}</span> : ''}
+                  </td>
+                )}
+                <td style={{padding:'10px 8px', color:C.sub}}>
+                  {r.evaluated
+                    ? `${r.white_matches} match${r.white_matches !== 1 ? 'es' : ''}${specialName && r.sp_match ? ' + ' + specialName : ''}`
+                    : <span style={{color:'#f59e0b'}}>pending</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div style={{display:'flex', justifyContent:'center', gap:'8px', marginTop:'12px'}}>
+          <button onClick={()=>setPage(p=>Math.max(0, p-1))} disabled={page===0}
+                  style={{background:'transparent', border:`1px solid ${C.border}`, color:C.sub,
+                          borderRadius:'999px', padding:'6px 14px', fontSize:'13px',
+                          cursor: page===0 ? 'not-allowed' : 'pointer', opacity: page===0 ? 0.5 : 1}}>
+            ← Prev
+          </button>
+          <span style={{color:C.sub, fontSize:'13px', padding:'6px 12px'}}>
+            {page+1} / {totalPages}
+          </span>
+          <button onClick={()=>setPage(p=>Math.min(totalPages-1, p+1))} disabled={page>=totalPages-1}
+                  style={{background:'transparent', border:`1px solid ${C.border}`, color:C.sub,
+                          borderRadius:'999px', padding:'6px 14px', fontSize:'13px',
+                          cursor: page>=totalPages-1 ? 'not-allowed' : 'pointer',
+                          opacity: page>=totalPages-1 ? 0.5 : 1}}>
+            Next →
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function PredictionsPage({ onBack }) {
-  const games = { powerball:'Powerball', megamillions:'Mega Millions',
-                  superlotto:'SuperLotto Plus', daily3:'Daily 3', daily4:'Daily 4' };
-  const tabColor = { powerball:'#ef4444', megamillions:'#3b82f6',
-                     superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
+  const [activeTab, setActiveTab] = React.useState('powerball');
+  const tabColor = { powerball:'#ef4444', megamillions:'#3b82f6', superlotto:'#10b981', daily3:'#f59e0b', daily4:'#8b5cf6' };
+  const whiteCounts = { powerball:5, megamillions:5, superlotto:5, daily3:3, daily4:4 };
+
   return (
     <div style={{maxWidth:'900px', margin:'0 auto', padding:'16px'}}>
       <button onClick={onBack}
@@ -160,48 +278,62 @@ function PredictionsPage({ onBack }) {
         ← Back
       </button>
       <h2 style={{color:C.text, fontSize:'20px', fontWeight:'700', marginBottom:'4px'}}>
-        Download Past Picks
+        Historical Numero Picks
       </h2>
-      <p style={{color:C.sub, fontSize:'13px', marginBottom:'20px'}}>
-        Download every prediction Numero has ever made for a game.
+      <p style={{color:C.sub, fontSize:'13px', marginBottom:'16px'}}>
+        Every prediction Numero has ever made, plus the result once the drawing happened.
       </p>
-      <div style={{display:'grid', gap:'12px'}}>
-        {Object.entries(games).map(([key, label]) => (
-          <div key={key} style={{background:C.panel, borderRadius:'14px',
-                                 padding:'16px', border:`1px solid ${C.border}`}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between',
-                         flexWrap:'wrap', gap:'12px'}}>
-              <h3 style={{color:tabColor[key], fontSize:'16px', fontWeight:'700', margin:0}}>
-                {label}
-              </h3>
-              <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
-                <a href={`${API_BASE_DL}/download/${key}/predictions/csv`}
-                   style={{background:'#1e40af', color:'#fff', textDecoration:'none',
-                           padding:'8px 16px', borderRadius:'999px', fontSize:'13px',
-                           fontWeight:'700'}}>
-                  ⬇ CSV
-                </a>
-                <a href={`${API_BASE_DL}/download/${key}/predictions/xlsx`}
-                   style={{background:'#166534', color:'#fff', textDecoration:'none',
-                           padding:'8px 16px', borderRadius:'999px', fontSize:'13px',
-                           fontWeight:'700'}}>
-                  ⬇ Excel
-                </a>
-              </div>
-            </div>
-          </div>
+      <div style={{display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap'}}>
+        {Object.entries(GAME_LABELS_DL).map(([key, label]) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+                  style={{background: activeTab===key ? tabColor[key] : C.panel,
+                          color: activeTab===key ? '#fff' : C.sub,
+                          border:`1px solid ${activeTab===key ? tabColor[key] : C.border}`,
+                          borderRadius:'999px', padding:'7px 16px', fontWeight:'700',
+                          fontSize:'13px', cursor:'pointer', fontFamily:'Inter,sans-serif',
+                          whiteSpace:'nowrap',
+                          boxShadow: activeTab===key ? `0 2px 8px ${tabColor[key]}55` : 'none',
+                          transition:'all 0.15s'}}>
+            {label}
+          </button>
         ))}
       </div>
+      <Card>
+        <PredictionsTable
+          key={activeTab}
+          gameKey={activeTab}
+          specialName={SPECIAL_NAMES[activeTab]}
+          whiteCount={whiteCounts[activeTab]}
+          apiBase={API_BASE_DL}
+        />
+      </Card>
     </div>
   );
 }
 
-/* ── How it works page ─────────────────────────────────────────────────────── */
+/* ── How it works page (workflow diagram) ─────────────────────────────────── */
 function HowItWorksPage({ onBack }) {
-  const sec = { color:C.text, fontSize:'17px', fontWeight:'700',
-                marginTop:'24px', marginBottom:'8px' };
-  const body = { color:C.sub, fontSize:'14px', lineHeight:'1.6',
-                 marginBottom:'8px' };
+  const steps = [
+    { n:1, title:'Data Collection',
+      body:'Pull historical results for all 5 games from the official California Lottery JSON API on a schedule. Every draw ever played is stored in the cloud database.',
+      color:'#3b82f6' },
+    { n:2, title:'Era Filtering',
+      body:'Games change over time (Powerball added 60-69 in 2015; Mega Millions shrank 75→70 in 2017). Numero auto-filters draws so training only uses data reflecting current rules.',
+      color:'#8b5cf6' },
+    { n:3, title:'7-Method Ensemble',
+      body:'Every prediction is the blended output of 7 independent models: frequency, Markov, spectral, gap-weighting, neural network, Monte Carlo, and time-decayed frequency.',
+      color:'#ef4444' },
+    { n:4, title:'Bayesian Weighting',
+      body:'The 7 methods are continuously scored against recent draws via Brier score. Methods that have been accurate lately get more weight in the final blend.',
+      color:'#f59e0b' },
+    { n:5, title:'Ticket Generation',
+      body:'Sample 5 tickets from the blended probability distribution — diverse across number bands, avoiding duplicates. Daily 3/4 tickets are position-aware.',
+      color:'#10b981' },
+    { n:6, title:'Accuracy Tracking',
+      body:'Every prediction is saved permanently. When the drawing happens, Numero compares picks to the result and updates rolling accuracy metrics.',
+      color:'#06b6d4' },
+  ];
+
   return (
     <div style={{maxWidth:'760px', margin:'0 auto', padding:'16px'}}>
       <button onClick={onBack}
@@ -213,70 +345,62 @@ function HowItWorksPage({ onBack }) {
       <h2 style={{color:C.text, fontSize:'22px', fontWeight:'700', marginBottom:'4px'}}>
         How Numero Works
       </h2>
-      <p style={{color:C.sub, fontSize:'13px', marginBottom:'8px'}}>
-        A behind-the-scenes tour of the analysis pipeline.
+      <p style={{color:C.sub, fontSize:'13px', marginBottom:'20px'}}>
+        The full pipeline, from raw draw data to the tickets you see.
       </p>
 
-      <h3 style={sec}>1. Data collection</h3>
-      <p style={body}>
-        Numero pulls historical results for all five games directly from the
-        official California Lottery JSON API. Powerball, Mega Millions, SuperLotto
-        Plus, Daily 3, and Daily 4 are refreshed on a schedule and stored in a
-        cloud database. Every draw ever played for a game is available for the
-        engine to train on.
-      </p>
+      <div style={{display:'flex', flexDirection:'column', gap:'0px'}}>
+        {steps.map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div style={{
+              background: C.panel,
+              border: `2px solid ${s.color}`,
+              borderRadius:'14px',
+              padding:'16px',
+              position:'relative',
+            }}>
+              <div style={{
+                position:'absolute', top:'-14px', left:'16px',
+                background: s.color, color:'#fff',
+                borderRadius:'999px', padding:'2px 14px',
+                fontWeight:'700', fontSize:'12px',
+                letterSpacing:'0.05em',
+              }}>
+                STEP {s.n}
+              </div>
+              <h3 style={{color:s.color, fontSize:'18px', fontWeight:'700',
+                          margin:'6px 0 8px'}}>
+                {s.title}
+              </h3>
+              <p style={{color:C.sub, fontSize:'14px', lineHeight:'1.55', margin:0}}>
+                {s.body}
+              </p>
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{textAlign:'center', color:C.border, fontSize:'32px',
+                           lineHeight:'0.6', padding:'8px 0'}}>
+                ↓
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
 
-      <h3 style={sec}>2. Era filtering</h3>
-      <p style={body}>
-        Games change over time — Powerball added numbers 60&nbsp;through&nbsp;69 in
-        2015, Mega Millions shrank from 75 to 70 in 2017. Numero automatically
-        detects and filters out any draw from an old rule-set so predictions
-        are trained only on data reflecting current game rules.
-      </p>
-
-      <h3 style={sec}>3. The seven-method ensemble</h3>
-      <p style={body}>
-        Every prediction is the blended output of seven independent models:
-        frequency analysis, Markov transitions, spectral mean-reversion, gap
-        weighting, a neural network, Monte Carlo sampling with Halton
-        low-discrepancy sequences, and time-decayed frequency. Each method
-        produces its own probability distribution over the number range.
-      </p>
-
-      <h3 style={sec}>4. Bayesian weight updating</h3>
-      <p style={body}>
-        The seven method outputs aren&apos;t weighted equally forever. Numero
-        continuously scores each one against the most recent draws using the
-        Brier score. Methods that have been more accurate lately get their
-        weight in the final blend increased.
-      </p>
-
-      <h3 style={sec}>5. Ticket generation</h3>
-      <p style={body}>
-        Once the final blended probabilities are set, Numero samples five
-        tickets that are diverse across number bands, avoid duplicates, and
-        favor high-probability picks. For Daily 3 and Daily 4 the tickets are
-        position-aware so each digit is predicted for its specific slot.
-      </p>
-
-      <h3 style={sec}>6. Accuracy tracking</h3>
-      <p style={body}>
-        Every prediction is saved permanently with the target draw date. When
-        the actual result comes in, Numero compares it against every past
-        prediction, records the score, and updates the rolling accuracy metrics
-        you see on the accuracy panel. Nothing is thrown away — the same
-        history you see was used to test the engine on itself.
-      </p>
-
-      <h3 style={sec}>An honest note</h3>
-      <p style={body}>
-        Modern lotteries use certified random draws, so no model can genuinely
-        beat the house edge over the long run. Numero can identify
-        &ldquo;structured&rdquo; picks that avoid obviously bad tickets
-        (birthday clusters, all-consecutive numbers, etc.) so if you do win, you
-        are less likely to split the prize with dozens of others. That is real,
-        modest value — treat everything else as entertainment.
-      </p>
+      <div style={{marginTop:'28px', padding:'16px', background:C.panel,
+                   border:`1px solid ${C.border}`, borderRadius:'12px'}}>
+        <div style={{color:'#fbbf24', fontSize:'12px', fontWeight:'700',
+                     letterSpacing:'0.08em', marginBottom:'6px'}}>
+          AN HONEST NOTE
+        </div>
+        <p style={{color:C.sub, fontSize:'13px', lineHeight:'1.55', margin:0}}>
+          Modern lotteries use certified random draws, so no model can genuinely
+          beat the house edge long-term. Numero can identify structured picks
+          that avoid obviously-bad tickets (birthday clusters, all-consecutive
+          numbers, etc.) so if you do win, you&apos;re less likely to split the
+          prize. That&apos;s modest real value — treat everything else as
+          entertainment.
+        </p>
+      </div>
     </div>
   );
 }
