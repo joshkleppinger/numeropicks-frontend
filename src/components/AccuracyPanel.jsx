@@ -1,9 +1,19 @@
 import React from 'react';
 import { formatDateMDY } from '../App';
 
-export function AccuracyPanel({ data, specialName }) {
+export function AccuracyPanel({ data, specialName, whiteCount }) {
   if (!data) return null;
   const { summary, evaluated, pending } = data;
+  const hasSpecial = !!specialName;
+  // For Daily 3/4 (no special ball) the "score" percentage is derived from
+  // the fraction of matched white balls: 1 match = 1/N × 100.  For big
+  // games we keep whatever score the backend supplied.
+  const scoreFor = (r) => {
+    if (!hasSpecial && whiteCount) {
+      return Math.round((r.white_matches / whiteCount) * 100);
+    }
+    return Math.round(r.score * 100);
+  };
 
   const scoreColor = (pct) => {
     if (pct >= 60) return '#10b981';
@@ -23,10 +33,11 @@ export function AccuracyPanel({ data, specialName }) {
         }}>
           {[
             { label: 'Last Drawing', value: `${summary.last_score}%`, color: scoreColor(summary.last_score) },
-            { label: 'Avg Matches', value: `${summary.avg_white_matches}/5` },
-            { label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` },
+            { label: 'Avg Matches',
+              value: `${summary.avg_white_matches}/${whiteCount || 5}` },
+            hasSpecial && { label: `${specialName} Hit Rate`, value: `${summary.special_hit_rate}%` },
             { label: 'Rounds Tracked', value: summary.total_rounds },
-          ].map(({ label, value, color }) => (
+          ].filter(Boolean).map(({ label, value, color }) => (
             <div key={label} style={{
               background:   '#111827',
               borderRadius: '12px',
@@ -77,7 +88,9 @@ export function AccuracyPanel({ data, specialName }) {
           <h4 style={{ color: '#64748b', fontSize: '13px', marginBottom: '8px' }}>
             ✅ RECENT RESULTS
           </h4>
-          {[...evaluated].reverse().slice(0, 5).map((r, i) => (
+          {[...evaluated].reverse().slice(0, 5).map((r, i) => {
+            const pct = scoreFor(r);
+            return (
             <div key={i} style={{
               background:   '#111827',
               borderRadius: '10px',
@@ -88,18 +101,19 @@ export function AccuracyPanel({ data, specialName }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                 <span style={{ color: '#94a3b8' }}>{formatDateMDY(r.target_draw_date)}</span>
                 <span style={{
-                  color:      scoreColor(Math.round(r.score * 100)),
+                  color:      scoreColor(pct),
                   fontWeight: '700',
                 }}>
-                  {Math.round(r.score * 100)}%
+                  {pct}%
                 </span>
               </div>
               <div style={{ color: '#475569', fontSize: '12px' }}>
                 {r.white_matches} match{r.white_matches !== 1 ? 'es' : ''}
-                {r.sp_match ? ` + ${specialName}` : ''}
+                {hasSpecial && r.sp_match ? ` + ${specialName}` : ''}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
