@@ -19,7 +19,18 @@ export function DataTable({ gameKey, gameName, specialName, apiBase }) {
     setPage(0);
     fetch(`${apiBase}/history/${gameKey}?limit=500`)
       .then(r => r.json())
-      .then(d => { setRows(d.draws || []); setLoading(false); })
+      .then(d => {
+        // The backend may return rows in insert/id order. Sort by parsed date,
+        // newest first, so the display is truly reverse-chronological.
+        const draws = (d.draws || []).slice().sort((a, b) => {
+          const da = new Date(a.date).getTime();
+          const db = new Date(b.date).getTime();
+          if (isNaN(da) || isNaN(db)) return 0;
+          return db - da;
+        });
+        setRows(draws);
+        setLoading(false);
+      })
       .catch(e => { setError(e.message); setLoading(false); });
   }, [gameKey, apiBase]);
 
