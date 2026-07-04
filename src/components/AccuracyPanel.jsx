@@ -86,7 +86,7 @@ export function AccuracyPanel({ data, specialName, whiteCount }) {
               color:        '#94a3b8',
             }}>
               <span style={{ color: '#e2e8f0' }}>{formatDateMDY(p.target_draw_date)}</span>
-              {p.awaiting_scrape && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠ awaiting scrape</span>}
+              {p.awaiting_scrape && <span style={{ color: '#f59e0b', marginLeft: '8px' }}>⚠ awaiting next drawing</span>}
             </div>
           ))}
         </div>
